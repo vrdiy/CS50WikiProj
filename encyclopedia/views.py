@@ -1,10 +1,10 @@
+#import markdown2
 from django import forms
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 import random
 from . import util, mdConvert
-import markdown2
 
 
 class SearchForm(forms.Form):
@@ -22,7 +22,7 @@ class EditEntryForm(forms.Form):
 
 
 def index(request):
-    mdConvert.convert("test")
+    mdConvert.convert('Asus')
     entries = util.list_entries()
     counter = 0
     for i in entries:     
@@ -36,8 +36,10 @@ def index(request):
 
 
 def find(request,name):
+    #mdConvert.convert(name)
     if util.get_entry(name):
-        html =  markdown2.markdown(util.get_entry(name))
+        #html =  markdown2.markdown(util.get_entry(name)) uncomment this line and line 1 to use markdown native
+        html = mdConvert.convert(name) #comment this line to disable custom md
         return render(request,"encyclopedia/wiki/defaultPage.html", {
             "form": SearchForm(),
             "Title": name,
@@ -116,6 +118,7 @@ def editPage(request,name):
         else:
             return render(request,"encyclopedia/editPage.html",{"form": SearchForm(),"entryMD": entryForm,"badsubmit": True})
     else:
-        form = EditEntryForm(initial={'entryMD': util.get_entry(name)})
+        form = EditEntryForm(initial={'entryMD': mdConvert.cleanLines(util.get_entry(name))})
+
         print(form)
         return render(request,"encyclopedia/editPage.html",{"title": name, "form": SearchForm(),"entryMD": form,"badsubmit": False})
