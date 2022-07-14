@@ -1,0 +1,20 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+
+    {{Title|safe}}
+
+{% endblock %}
+
+{% block formblock %}
+{% csrf_token %}
+{{form}}
+{% endblock %}
+
+{% block body %}
+
+{{entries|safe}}
+
+<a href="{% url 'editPage' Title %}">Edit Page</a>
+
+{% endblock %}

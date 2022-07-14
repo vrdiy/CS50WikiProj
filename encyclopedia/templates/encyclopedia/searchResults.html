@@ -1,0 +1,23 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+
+    {{Title|safe}}
+
+{% endblock %}
+
+{% block formblock %}
+{% csrf_token %}
+{{form}}
+{% endblock %}
+
+{% block body %}
+
+<h1>Results for: '{{search}}'</h1>
+
+<ul>
+    {% for entry in entries %}
+        <li>{{ entry|safe }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

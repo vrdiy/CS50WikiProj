@@ -1,0 +1,29 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block headblock %}
+<style>.sidebar {
+    background-color: #FAF8AA;
+    height: 200vh;
+}</style>
+{% endblock %}
+
+{% block title %}
+    {{title}}
+{% endblock %}
+
+{% block formblock %}
+{% csrf_token %}
+{{form}}
+{% endblock %}
+
+{% block body %}
+{% if badsubmit %}
+<h1>Error: Page already exists: </h1>
+{%endif%}
+<div></div>
+    <form action="/editEntry/{{title}}" method="post">
+        {% csrf_token %}
+        {{entryMD}}
+        <div><input value="Save" type="submit"></div>
+    </form>
+{% endblock %}
