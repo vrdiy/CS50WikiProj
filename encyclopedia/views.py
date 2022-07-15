@@ -1,9 +1,10 @@
-#import markdown2
+import markdown2
 from django import forms
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 import random
+
 from . import util, mdConvert
 
 
@@ -19,27 +20,50 @@ class EntryForm(forms.Form):
 class EditEntryForm(forms.Form):
     # omit pageName field for editing pages.
     entryMD = forms.CharField(label="",widget=forms.Textarea(attrs={'style': 'resize: none; height: 200vh;'}))
-
+class ToggleMD(forms.Form):
+    useCustomMD = forms.BooleanField(label="ToggleCustomMDConversion",required=False)
 
 def index(request):
-    mdConvert.convert('Asus')
+    if request.method == "POST":
+        toggle = ToggleMD(request.POST)
+        useCustomMDvar = request.POST.get("useCustomMD",False)
+        if toggle.is_valid():
+            request.session["useCustomMD"] = useCustomMDvar    
+        else:
+            return render(request, "encyclopedia/errorPage.html", {
+        "form": SearchForm(),
+        "Title": "Error"})
+
     entries = util.list_entries()
     counter = 0
     for i in entries:     
         entries[counter] = (f'<a href="wiki/{i}">{i}</a>')
         counter +=1
-        
-    return render(request, "encyclopedia/index.html", {
-        "form": SearchForm(),
-        "entries": entries
-    })
+    if "useCustomMD" not in request.session:
+        return render(request, "encyclopedia/index.html", {
+            "form": SearchForm(),
+            "entries": entries,
+            "ToggleButton": ToggleMD()
+        })
+    else:
+        toggle = ToggleMD(initial={'useCustomMD': request.session["useCustomMD"]})
+
+        return render(request, "encyclopedia/index.html", {
+            "form": SearchForm(),
+            "entries": entries,
+            "ToggleButton": toggle
+        })
 
 
 def find(request,name):
-    #mdConvert.convert(name)
     if util.get_entry(name):
-        #html =  markdown2.markdown(util.get_entry(name)) uncomment this line and line 1 to use markdown native
-        html = mdConvert.convert(name) #comment this line to disable custom md
+        if "useCustomMD" in request.session:
+            if request.session["useCustomMD"]:
+                html = mdConvert.convert(name)
+            else:
+                html =  markdown2.markdown(util.get_entry(name))
+        else:
+            html =  markdown2.markdown(util.get_entry(name))
         return render(request,"encyclopedia/wiki/defaultPage.html", {
             "form": SearchForm(),
             "Title": name,
@@ -57,15 +81,20 @@ def randomPage(request):
     return HttpResponseRedirect(reverse('findwiki',args=(page,)))
 
  
-def searchWiki(request): # make sure <action is "/searchWiki", the slash makes it run from the root dir rather than the current page dir
+def searchWiki(request): 
     if request.method == "POST":
         form = SearchForm(request.POST)
         if form.is_valid():
             counter = 0
             matchingSearches = []
             searches = str.lower(form.cleaned_data["search"])
+
             for i in util.list_entries(): #create list of matching pages, case insensitive
+                temp = i
                 i = str.lower(i)
+                if i == searches:
+                    return HttpResponseRedirect(reverse('findwiki',args=(temp,)))
+
                 if searches in i:
                     matchingSearches.append(util.list_entries()[counter]) 
                 counter +=1
@@ -120,5 +149,5 @@ def editPage(request,name):
     else:
         form = EditEntryForm(initial={'entryMD': mdConvert.cleanLines(util.get_entry(name))})
 
-        print(form)
+        #print(form)
         return render(request,"encyclopedia/editPage.html",{"title": name, "form": SearchForm(),"entryMD": form,"badsubmit": False})
